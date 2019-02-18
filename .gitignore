@@ -1,0 +1,22 @@
+.DS_Store
+.atomignore
+.build
+.cache
+.env
+.gitconfig
+.jsdoc
+.sass-cache
+.tmp
+
+*~
+*.bak
+*.log
+*.orig
+*.zip
+
+node_modules
+
+# Secrets - Handled by multi-encrypt - DO NOT COMMIT THESE FILES!
+./src/phi.json
+./src/shared/gateway.env
+./bin/cli.js
