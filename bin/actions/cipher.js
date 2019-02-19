@@ -101,13 +101,19 @@ function cipher(command, options) {
                     return secretsLineFound;
                 })
                 .forEach(file => {
+                  // When we get here
+                  if (file && fs.existsSync(file)) {
+                    console.log(chalk.green(`Encrypting ${file}...`));
                     codec(file, tempFile);
                     encrypted[file] = fs.readFileSync(tempFile).toString('base64');
                     totalFiles++;
+                  } else {
+                    if (file) console.log(chalk.red(`File not found: ${file}`));
+                  }
                 });
                 // All done...
                 fs.writeFileSync('./encrypted.json', JSON.stringify(encrypted, null, 4));
-                fs.unlinkSync(tempFile);
+                if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
                 handleCipherSuccess(totalFiles, command + 'ed');
             } else {
             // Try to read the .encrypted file...
@@ -118,7 +124,7 @@ function cipher(command, options) {
                 totalFiles++;
             })
             // All done...
-            fs.unlinkSync(tempFile);
+            if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
             handleCipherSuccess(totalFiles, command + 'ed');
         }
     } catch (err) {
@@ -231,8 +237,10 @@ function handleUnknownErrors(opts, err) {
  * @param {Error} err
  */
 function handleCipherSuccess(files, command) {
+  const extra = command === 'encrypted' ?
+    '\nEncrypted files are located in encrypted.json in this folder.' : '';
   console.log(chalk.green(
-    `\nSuccess!\n${files} file(s) ${command}.`
+    `\nSuccess!\n${files} file(s) ${command}.${extra}`
   ));
 }
 

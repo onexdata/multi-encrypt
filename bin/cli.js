@@ -11,6 +11,8 @@ let chalk = require('chalk');
 
 let nodecipher = require('../');
 
+console.log(`Multi-Encrypt v${Package.version}\n`);
+
 /**
  * Issues the password security warning, if relevant.
  *
