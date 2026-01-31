@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npm view:*)",
+      "Bash(npm test)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: update .gitignore and remove legacy test files\n\n- Add coverage/ to .gitignore \\(build artifacts\\)\n- Add .claude/, .idea/, .vscode/ to .gitignore \\(IDE directories\\)\n- Simplify secrets section to use test-secrets/ directory\n- Remove src/phi.json and src/shared/gateway.env \\(old test data\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: update copyright year to 2025\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: remove legacy node-cipher code\n\nRemove the 833-line NodeCipher class that was copied from node-cipher repo.\nThis code had several security issues:\n- Static salt \\(''nodecipher''\\) enabling rainbow table attacks\n- Only 1,000 PBKDF2 iterations \\(OWASP recommends 600,000\\)\n- CAST5-CBC cipher \\(legacy, no authentication\\)\n- SHA-1 digest \\(deprecated\\)\n- Deprecated crypto.createCipher API\n\nThe new implementation will be added in subsequent commits.\n\nBREAKING CHANGE: Complete rewrite of encryption module\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add modern crypto module with AES-256-GCM\n\nImplements secure encryption using Node.js native crypto module:\n\nSecurity features \\(v2 format\\):\n- AES-256-GCM authenticated encryption \\(confidentiality + integrity\\)\n- 600,000 PBKDF2-SHA256 iterations \\(OWASP 2024 recommendation\\)\n- 64-byte random salt per encryption \\(prevents rainbow tables\\)\n- 12-byte random IV per file \\(native GCM size\\)\n- Authentication tags to detect tampering\n\nBackward compatibility \\(v1 format\\):\n- Detects legacy encrypted.json files \\(no version/salt fields\\)\n- Supports decryption with old CAST5-CBC/1000 iterations/static salt\n- Users can decrypt old files, then re-encrypt to upgrade to v2\n\nAPI:\n- encryptData\\(data, key\\) - encrypt with AES-256-GCM\n- decryptData\\(encData, key, iv, tag\\) - decrypt v2 format\n- decryptLegacyData\\(encData, key\\) - decrypt v1 format\n- deriveKey\\(password, salt\\) - PBKDF2 key derivation \\(v2\\)\n- deriveLegacyKey\\(password\\) - PBKDF2 with static salt \\(v1\\)\n- getPassword\\(provided?\\) - prompt or use provided password\n- isLegacyFormat\\(encrypted\\) - detect v1 vs v2 format\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: modernize CLI with password flag for CI/CD\n\nSimplify CLI from 212 lines to 28 lines:\n\n- Remove deprecated options \\(algorithm, salt, iterations, keylen, digest\\)\n  These are now hardcoded to secure defaults - no footguns\n- Keep -p, --password flag for CI/CD automation\n- Update commander usage to modern destructured import\n- Remove verbose JSDoc comments \\(code is self-documenting now\\)\n- Remove security warning about password flag \\(documented in README instead\\)\n\nCommands:\n- multi-encrypt encrypt|enc [-p password]\n- multi-encrypt decrypt|dec [-p password]\n\nThe password flag enables automation in CI/CD pipelines:\n  multi-encrypt dec -p \"$SECRETS_PASSWORD\"\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(cat:*)"
+    ]
+  }
+}

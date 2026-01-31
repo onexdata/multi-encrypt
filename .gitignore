@@ -19,10 +19,13 @@ node_modules
 # Build artifacts
 coverage/
 
-# IDE/Tool directories
-.claude/
+# IDE directories
 .idea/
 .vscode/
 
-# Secrets - Handled by multi-encrypt - DO NOT COMMIT THESE FILES!
-test-secrets/
+# Secrets - files listed here will be encrypted by multi-encrypt
+# The test-secrets/ files below are committed as working examples
+# Add your real secret files here (they won't be committed if listed)
+test-secrets/api-key.json
+test-secrets/config.env
+test-secrets/my-secret-implementation.js
