@@ -16,7 +16,13 @@
 
 node_modules
 
+# Build artifacts
+coverage/
+
+# IDE/Tool directories
+.claude/
+.idea/
+.vscode/
+
 # Secrets - Handled by multi-encrypt - DO NOT COMMIT THESE FILES!
-./src/phi.json
-./src/shared/gateway.env
-./bin/cli.js
+test-secrets/
