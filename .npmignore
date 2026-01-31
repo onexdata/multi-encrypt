@@ -1,0 +1,13 @@
+# Development/planning files
+multi-encrypt-*.md
+coverage/
+
+# Tests (not needed at runtime)
+src/__tests__/
+
+# IDE
+.idea/
+.vscode/
+
+# Test fixtures (examples are in README)
+test-secrets/
