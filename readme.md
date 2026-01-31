@@ -127,6 +127,94 @@ The v2 format includes:
 
 Your team members will need to update their multi-encrypt version before they can decrypt v2 files.
 
+## Comparison with Alternatives
+
+| Tool | Type | Windows | Key Management | File Types | Dependencies | Setup Complexity |
+|------|------|---------|----------------|------------|--------------|------------------|
+| **multi-encrypt** | npm package | Native | Password (memorizable) | Any file | 3 (npm only) | `npm i` + done |
+| **git-crypt** | C++ binary | [Problematic](https://github.com/AGWA/git-crypt/issues/284) | GPG keys | Any file | GPG + binary | Install GPG, generate keys, configure |
+| **blackbox** | Shell scripts | No | GPG keys | Any file | GPG + bash | Install GPG, manage keyrings |
+| **SOPS** | Go binary | Yes | KMS/GPG/age keys | YAML/JSON/ENV | External binary | Install binary, configure KMS or keys |
+| **git-secret** | Bash tool | No | GPG keys | Any file | GPG + bash | Install GPG, add users to keyring |
+| **dotenvx** | npm package | Yes | Public/private keys | .env only | 9+ npm deps | Generate keys, store private key |
+| **transcrypt** | Shell + OpenSSL | Limited | Shared password | Any file | OpenSSL + bash | Configure git filters |
+
+### Why multi-encrypt?
+
+**Choose multi-encrypt if you want:**
+- Password-based encryption (no keys to manage, rotate, or lose)
+- Cross-platform support including Windows (just `npm install`)
+- Zero external dependencies (no GPG, no binaries, no cloud services)
+- Encrypt any file type (not just .env files)
+- Simple mental model (password → encrypted file)
+
+**Choose something else if you need:**
+- Per-user access control (use git-crypt or blackbox with GPG)
+- Cloud KMS integration (use SOPS)
+- Transparent git encryption (use git-crypt or transcrypt)
+- Enterprise audit logging (use a secrets manager)
+
+## Transparency & Trade-offs
+
+We believe in being upfront about limitations. Here's what you should know:
+
+### What This Tool Is
+
+✅ **A simple, password-based encryption tool** for teams that want to commit encrypted secrets to git without complex key management.
+
+✅ **Cross-platform** - Works identically on Windows, Mac, and Linux with just `npm install`.
+
+✅ **Zero external dependencies** - Uses only Node.js built-in `crypto` module. No GPG, no cloud services, no native binaries.
+
+✅ **Backward compatible** - v2 can decrypt files encrypted with v1.
+
+### What This Tool Is NOT
+
+❌ **Not a secrets manager** - There's no UI, no access control, no audit logging. It's a CLI tool.
+
+❌ **Not for per-user permissions** - Everyone with the password can decrypt everything. For granular access control, use GPG-based tools.
+
+❌ **Not transparent encryption** - You manually run `enc`/`dec`. For automatic encrypt-on-commit, use git-crypt.
+
+❌ **Not for huge files** - Files are loaded into memory. Fine for configs, not for gigabyte blobs.
+
+### Cryptographic Choices Explained
+
+| Choice | What We Use | Why | Alternative Considered |
+|--------|-------------|-----|------------------------|
+| Cipher | AES-256-GCM | Industry standard, authenticated encryption, native Node.js support | ChaCha20-Poly1305 (less universal support) |
+| KDF | PBKDF2-SHA256 | OWASP recommended, native Node.js support, well-understood | Argon2id (requires native addon) |
+| Iterations | 600,000 | OWASP 2024 recommendation for PBKDF2-SHA256 | Higher = slower UX, lower = less secure |
+| Salt | 64 bytes random | Exceeds recommendations, prevents rainbow tables | 32 bytes (sufficient but we prefer overkill) |
+| IV | 12 bytes random | Native GCM size, unique per file | 16 bytes (works but triggers extra computation) |
+
+### Known Limitations
+
+1. **Password strength is on you** - We enforce 8+ characters, but a weak password undermines everything. Use a passphrase or generated password.
+
+2. **No password recovery** - Forget your password = lose your secrets. We can't help. Keep a backup somewhere safe.
+
+3. **All-or-nothing access** - Can't give someone access to just one file. It's the whole encrypted.json or nothing.
+
+4. **~1 second delay on encrypt/decrypt** - The 600,000 PBKDF2 iterations take time. This is a feature (slows down attackers), not a bug.
+
+5. **Secrets visible in memory** - During encryption/decryption, plaintext exists in Node.js memory. This is true of all encryption tools.
+
+### Why Not Argon2?
+
+You might wonder why we use PBKDF2 instead of Argon2 (the "modern" choice). Reasons:
+
+1. **Native Node.js support** - PBKDF2 is built into Node.js. Argon2 requires native addons that can fail to compile on some systems.
+2. **Cross-platform reliability** - Native addons are a common source of "works on my machine" issues, especially on Windows.
+3. **PBKDF2 is not broken** - With 600,000 iterations, PBKDF2-SHA256 is still OWASP-recommended and secure.
+4. **Zero-dependency philosophy** - Adding `argon2` npm package adds supply chain risk and build complexity.
+
+If you need Argon2, use a tool like SOPS that's designed around it.
+
+### This Project Uses AI Assistance
+
+This repository is developed with assistance from [Claude Code](https://claude.ai/code). The `.claude/` directory contains Claude's configuration for this project. We believe in transparency about AI-assisted development.
+
 ## FAQ
 
 ### Q: Where do my encrypted files go?
@@ -194,50 +282,75 @@ multi-encrypt decrypt  # Decrypt files (alias: dec)
 multi-encrypt --help  # Show all commands and options
 ```
 
-## Common Worries/Complaints
+## Common Questions
 
-### **"Is this approach tested?"**
-Yes. Every statement, branch, function and line are fully tested. Read the latest coverage report [here](.\coverage\lcov-report\index.html), or download this repo and run the tests yourself.
+### "Is this tested?"
 
-## **"Is this approach respected?"**
-Yes. Paste this readme file into any LLM and ask it's opinion yourself. As of 2025, Claude 3.5 Sonnet and ChatGPT o1 agree this approach has the least attack surface of any approach possible after considering all aspects; it is *more* secure than a secrets manager and implements all aspects of modern military-grade security.
+Yes. 29 unit tests with 90%+ code coverage. Run `npm test` yourself or check the [test files](./src/__tests__/).
 
-### **"Why not just use a secrets manager?"**
-Secrets managers have their place, but they introduce significant risks and complexity:
-- **Increased Attack Surface**: Secrets managers centralize access to all secrets via APIs or UIs, meaning a single compromise can expose everything. Multi-encrypt minimizes the attack surface to just one encrypted file (`encrypted.json`) and a single password.
-- **Encourages Insecure Practices**: Secrets managers often require developers to manually upload sensitive `.env` files or plaintext secrets, increasing the risk of leaks. Multi-encrypt eliminates this by encrypting everything locally, removing the need to share plaintext secrets at all.
-- **Limited Flexibility**: Secrets managers are typically limited to storing text-based secrets like environment variables. Multi-encrypt can securely handle anything—entire files, algorithms, or sensitive configurations.
+### "Why not just use a secrets manager?"
 
-For large teams, Multi-encrypt works seamlessly with secrets managers by using them **only for secure distribution of the encrypted file**, while the decryption password is managed independently. This approach maintains the smallest possible attack surface while allowing teams to scale securely.
+Secrets managers (HashiCorp Vault, AWS Secrets Manager, etc.) are great for large enterprises, but they:
+- Add infrastructure complexity and cost
+- Require network access to decrypt secrets
+- Centralize access (single point of compromise)
+- Need their own access management
 
----
+Multi-encrypt is for teams that want simplicity: one password, one encrypted file, zero infrastructure.
 
-### **"Doesn't storing all secrets in a single encrypted file make it a single point of failure?"**
-No, `encrypted.json` is highly secure because:
-1. It’s fully encrypted using the most robust cryptography methods available, and is actually more secure than most secrets managers, ensuring it cannot be accessed without the password.
-2. It’s easy to version-control, in fact that's built in, making it just as auditable and traceable as your code itself, because it *is* code, just incredibly well encrypted.
-3. It avoids the need for developers to distribute multiple files insecurely, reducing human error.
+For hybrid approaches, use a secrets manager to store *just the decryption password*, and multi-encrypt for the actual secrets. Best of both worlds.
 
-As long as the password is managed securely, `encrypted.json` is far safer than distributing plaintext `.env` files or using secrets managers alone. It reduces attack surface to a single, incredibly hard surface, regardless of what other mistakes you may have made.
+### "Isn't a single encrypted file a single point of failure?"
 
----
+The file is:
+1. **Encrypted** with AES-256-GCM (government-grade)
+2. **Authenticated** (tampering is detected)
+3. **Version-controlled** (full history, easy rollback)
+4. **Distributed** (every clone has a copy)
 
-### **"How does this handle secret rotation for large teams?"**
-Multi-encrypt inherently supports secret rotation:
-- If a developer leaves, simply re-encrypt the file with a new password, commit your change, and distribute the new password securely to the remaining team. That's it! Even if they still have access to the repository itself, they cannot see your secret changes to the repo without the new password.
-- Developers with old passwords cannot decrypt the updated `encrypted.json`, ensuring they lose access to all secrets, even if the the repo access is public!
+Compare to alternatives: secrets in environment variables (leaked in logs), secrets managers (network dependency), or plaintext files (accidentally committed).
 
-This is simpler, faster, and more secure than relying on complex access control policies in a secrets manager; there is almost nothing to learn, almost no mistakes to make, and almost nothing that can go wrong. What is even better... there is no dependancy on a 3rd party! There is nobody to hack!
+### "How do I handle team member offboarding?"
 
----
+1. Decrypt secrets with old password
+2. Re-encrypt with new password
+3. Commit and push
+4. Share new password with remaining team (via secure channel)
 
-### **"How is this more secure than manually managing secrets?"**
-Multi-encrypt reduces human error by automating encryption and decryption workflows:
-- Secrets are never stored in plaintext.
-- Developers only need to manage a single encrypted file and password.
-- There’s no risk of accidentally committing sensitive files to version control, as `encrypted.json` is explicitly designed for this purpose.
+Old password holders can see old versions (git history), but not new secrets. If you need to invalidate old secrets entirely, rotate your API keys too.
 
-This streamlined approach minimizes mistakes while ensuring strong security.
+### "What if I forget the password?"
+
+**You lose your secrets.** There is no recovery mechanism - that's the point of encryption.
+
+Recommendations:
+- Store password in a password manager (1Password, Bitwarden)
+- Keep offline backup in a secure location
+- For teams, ensure multiple people know the password
+
+### "Is the -p flag safe for CI/CD?"
+
+The `-p` flag passes the password as a command argument, which may appear in:
+- Process listings (`ps aux`)
+- CI/CD logs (if not masked)
+- Shell history
+
+Safer alternatives:
+```bash
+# Use environment variable (most CI/CD systems support secrets)
+echo "$SECRETS_PASSWORD" | multi-encrypt dec
+
+# Or configure your CI to mask the argument
+multi-encrypt dec -p "${{ secrets.DECRYPT_PASSWORD }}"
+```
+
+### "Why is encryption slow (~1 second)?"
+
+The 600,000 PBKDF2 iterations intentionally slow down key derivation. This means:
+- **For you**: 1 second wait
+- **For attackers**: Billions of years to brute-force
+
+This is a security feature. Fast encryption = fast cracking.
 
 ## License
 MIT - see LICENSE file for details.
