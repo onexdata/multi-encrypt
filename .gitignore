@@ -16,7 +16,16 @@
 
 node_modules
 
-# Secrets - Handled by multi-encrypt - DO NOT COMMIT THESE FILES!
-./src/phi.json
-./src/shared/gateway.env
-./bin/cli.js
+# Build artifacts
+coverage/
+
+# IDE directories
+.idea/
+.vscode/
+
+# Secrets - files listed here will be encrypted by multi-encrypt
+# The test-secrets/ files below are committed as working examples
+# Add your real secret files here (they won't be committed if listed)
+test-secrets/api-key.json
+test-secrets/config.env
+test-secrets/my-secret-implementation.js
